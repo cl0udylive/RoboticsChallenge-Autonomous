@@ -11,6 +11,10 @@
 from vex import *
 
 # Brain should be defined by default
-brain=Brain()
+brain = Brain()
+
+def foo():
+  brain.screen.print("Button Pressed")
 
 brain.screen.print("Hello IQ2")
+brain.buttonCheck.pressed(foo)
