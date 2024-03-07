@@ -89,7 +89,6 @@ drivetrain.set_stopping(HOLD)
 drivetrain.set_heading(0.0, DEGREES)
 drivetrain.set_rotation(0.0, DEGREES)
 
-distanceFront = distance_front.object_distance(MM)
 distanceLeft = distance_left.object_distance(MM)
 distanceRight = distance_right.object_distance(MM)
 
@@ -119,24 +118,28 @@ brain.screen.next_row()
 brain.screen.print("Right: Auto.")
 
 # Set Challenge State
-mazeChallengeState = False
+mazeChallengeState = True
 autoChallengeState = False
 
 # Select Challenge Logic
-def selectMaze():
-    brain.play_note(2, 5, 500)
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
-    brain.screen.print("Maze Selected")
+# def selectMaze():
+#     brain.play_note(2, 5, 500)
+#     brain.screen.clear_screen()
+#     brain.screen.set_cursor(1, 1)
+#     brain.screen.print("Maze Selected")
    
-    wait(3, SECONDS)
+#     wait(3, SECONDS)
 
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
+#     brain.screen.clear_screen()
+#     brain.screen.set_cursor(1, 1)
 
-    mazeChallengeState = True
+#     mazeChallengeState = True
+#     print("Maze State: ", mazeChallengeState)
+#     return False
+ 
+# controller.buttonLUp.pressed(selectMaze)
 
-controller.buttonLUp.pressed(selectMaze)
+# Call mazeChallenge function if challenge is selected
 
 def selectAuto():
     brain.play_note(1, 5, 500)
@@ -155,8 +158,10 @@ controller.buttonRUp.pressed(selectAuto)
 
 # Maze Challenge Logic
 def frontSensorCheck():
+    distanceFront = distance_front.object_distance(MM)
+    print(distanceFront)
     # Is there an object in front of the robot?
-    while distanceFront <= 200:
+    while distanceFront < 100:
         brain.screen.print("Object Front!")
         drivetrain.stop()
         sideSensorCheck()
@@ -170,33 +175,42 @@ def sideSensorCheck():
     brain.screen.set_cursor(1, 1)
 
     # Is there an object on both sides of the robot?
-    if distanceLeft < 200 and distanceRight < 200:
+    if distanceLeft < 100 and distanceRight < 100:
         brain.screen.print("Object Both Sides!")
         brain.screen.next_row()
         # Randomly Turn Left or Right to Explore possibly alternate paths & ensure Robot is not caught in a loop
         if random.choice([True, False]):
             brain.screen.print("Turning Left!")
             drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_for(LEFT, wait=True)
+            drivetrain.turn_for(LEFT, heading + 90, DEGREES, wait=True)
         else:
             brain.screen.print("Turning Right!")
             drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_for(RIGHT, wait=True)
-         
+            drivetrain.turn_for(RIGHT, heading + 90, DEGREES, wait=True)
+
     # Is there an object on only one side of the robot?
-    elif distanceLeft < 200 or distanceRight < 200:
+    elif distanceLeft < 100 or distanceRight < 100:
         # Is there an object on the left?
-        if distanceLeft < 200:
+        if distanceLeft < 100:
             brain.screen.print("Turning Right!")
             drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_for(RIGHT, wait=True)
+            drivetrain.turn_for(RIGHT, heading + 90, DEGREES, wait=True)
         # Is there an object on the right?
-        elif distanceRight < 200:
+        elif distanceRight < 100:
             brain.screen.print("Turning Left!")
             drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_for(LEFT, wait=True)
+            drivetrain.turn_for(LEFT, heading + 90, DEGREES, wait=True)
         else:
             brain.screen.print("Error!") 
+        # Randomly Turn Left or Right to Explore possibly alternate paths & ensure Robot is not caught in a loop
+        if random.choice([True, False]):
+            brain.screen.print("Turning Left!")
+            drivetrain.set_turn_velocity(65, PERCENT)
+            drivetrain.turn_for(LEFT, heading + 90, DEGREES, wait=True)
+        else:
+            brain.screen.print("Turning Right!")
+            drivetrain.set_turn_velocity(65, PERCENT)
+            drivetrain.turn_for(RIGHT, heading + 90, DEGREES, wait=True)
 
     # Is there no object on either side?
     else:
@@ -204,11 +218,12 @@ def sideSensorCheck():
         if random.choice([True, False]):
             brain.screen.print("Turning Left!")
             drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_for(LEFT, wait=True)
+            drivetrain.turn_for(LEFT, heading + 90, DEGREES, wait=True)
         else:
             brain.screen.print("Turning Right!")
             drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_for(RIGHT, wait=True)
+            drivetrain.turn_for(RIGHT, heading + 90, DEGREES, wait=True)
+            
 
 # Challenge Function and Loop
 def mazeChallenge():
@@ -217,10 +232,9 @@ def mazeChallenge():
         brain.screen.set_cursor(1, 1)
         frontSensorCheck()
 
-# Call mazeChallenge function if challenge is selected
 if mazeChallengeState == True:
+    print("Maze Challenge Condition Met")
     mazeChallenge()
-
 
 ##### TODO: Create logic to ensure robot is moving completely straight (Check if distance is equal between left and right sensor and correct),
 ########### Handle turns better to ensure robot is not stuck, Handle dead ends better and potentially log positions for more intuitive backtracking
