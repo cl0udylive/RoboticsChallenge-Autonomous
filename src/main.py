@@ -197,12 +197,7 @@ def mazeChallenge():
         while distanceFront < 100:
             handleObstacle("front")
             break
-       
-        nearest_heading = round(current_heading / 90) * 90
-
-        if nearest_heading != current_heading:
-            drivetrain.turn_to_heading(nearest_heading, DEGREES, wait=False)    
-
+        
         brain.screen.print("Driving...")
         print("Driving...")
         drivetrain.set_drive_velocity(100, PERCENT)
