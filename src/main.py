@@ -72,7 +72,6 @@ brain.screen.print("5 Seconds")
 brain_inertial.calibrate()
 brain_inertial.set_heading(0.0, DEGREES)
 brain_inertial.set_rotation(0.0, DEGREES)
-heading = brain_inertial.heading()
 wait(5, SECONDS)
 
 brain.screen.clear_screen()
@@ -106,82 +105,69 @@ wait(3, SECONDS)
 brain.screen.clear_screen()
 brain.screen.set_cursor(1, 1)
 
-# Select Challenge Dialogue
-brain.play_sound(SoundType.ALARM)
-brain.screen.print("Select Challenge:")
-brain.screen.next_row()
-brain.screen.print("Left: Maze")
-brain.screen.next_row()
-brain.screen.print("Right: Auto.")
+# # Select Challenge Dialogue
+# brain.play_sound(SoundType.ALARM)
+# brain.screen.print("Select Challenge:")
+# brain.screen.next_row()
+# brain.screen.print("Left: Maze")
+# brain.screen.next_row()
+# brain.screen.print("Right: Auto.")
 
 # Select Challenge Logic
-def selectMaze():
-    brain.play_note(2, 5, 500)
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
-    brain.screen.print("Maze Selected")
-   
-    wait(3, SECONDS)
 
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
-
-    mazeChallenge()
- 
-controller.buttonLUp.pressed(selectMaze)
-
-def selectAuto():
-    brain.play_note(1, 5, 500)
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
-    brain.screen.print("Auto. Selected")
-   
-    wait(3, SECONDS)
-
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
-    
-    #autoChallenge()
-
-controller.buttonRUp.pressed(selectAuto)
 
 # Maze Challenge Logic
-def handleObstacle(sensorDirection):
-    if sensorDirection == "front":
+def handleError():
+    brain.screen.print("Error!")
+    print("Error")
+
+def handleObstacle(obstacleDirection):
+
+    current_heading = brain_inertial.heading()
+
+    if obstacleDirection == "front":
         brain.screen.print("Object Front!")
         print("Object Front!")
         drivetrain.stop()
         sideSensorCheck()
 
-    if sensorDirection == "left":
+    elif obstacleDirection == "left":
         brain.screen.print("Turning Right!")
         print("Turning Right!")
         drivetrain.set_turn_velocity(65, PERCENT)            
-        drivetrain.turn_for(RIGHT, heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(RIGHT, current_heading + 90, DEGREES, wait=True)
 
-    if sensorDirection == "right":
+    elif obstacleDirection == "right":
         brain.screen.print("Turning Left!")
         print("Turning Left!")
         drivetrain.set_turn_velocity(65, PERCENT)
-        drivetrain.turn_for(LEFT, heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(LEFT, current_heading + 90, DEGREES, wait=True)
+
+    elif obstacleDirection == "both":
+        print("Intersection!")
+        drivetrain.stop()
+        randomTurn()
 
     else:
-        print(sensorDirection)
+        print("Dead End!")
         drivetrain.stop()
         randomTurn()
 
 def randomTurn():
+
+    current_heading = brain_inertial.heading()
+
     if random.choice([True, False]):
         brain.screen.print("Turning Left!")
         print("Turning Left!")
         drivetrain.set_turn_velocity(65, PERCENT)
-        drivetrain.turn_for(LEFT, heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(LEFT, current_heading + 90, DEGREES, wait=True)
 
     else:
         brain.screen.print("Turning Right!")
         print("Turning Right!")
         drivetrain.set_turn_velocity(65, PERCENT)
-        drivetrain.turn_for(RIGHT, heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(RIGHT, current_heading + 90, DEGREES, wait=True)
 
 def sideSensorCheck():
     distanceLeft = distance_left.object_distance(MM)
@@ -191,35 +177,47 @@ def sideSensorCheck():
     brain.screen.set_cursor(1, 1)
 
     if distanceLeft < 100 and distanceRight < 100:
-        handleObstacle("Dead End")
+        handleObstacle("both")
     
-    if distanceLeft < 100 or distanceRight < 100:
+    elif distanceLeft < 100 or distanceRight < 100:
         
         if distanceLeft < 100:
             handleObstacle("left")
 
-        if distanceRight < 100:
+        else:
             handleObstacle("right")
         
     else:
-        handleObstacle("Intersection")
-
-    mazeChallenge()
+        handleObstacle("all")
 
 def mazeChallenge():
     while True:
         distanceFront = distance_front.object_distance(MM)
+        
         brain.screen.clear_screen()
         brain.screen.set_cursor(1, 1)
 
         while distanceFront < 100:
             handleObstacle("front")
             break
+       
+        current_heading = brain_inertial.heading()
+        print(current_heading)
+        nearest_heading = round(current_heading / 90) * 90
+        print(nearest_heading)
+
+        if nearest_heading != current_heading:
+            drivetrain.stop()
+            drivetrain.turn_to_heading(nearest_heading, DEGREES, wait=True)    
 
         brain.screen.print("Driving...")
         print("Driving...")
         drivetrain.set_drive_velocity(100, PERCENT)
         drivetrain.drive(FORWARD)
+        
+
+# Challenge Selector does not work, fix in future
+mazeChallenge()
 
 ##### TODO: Create logic to ensure robot is moving completely straight (Check if distance is equal between left and right sensor and correct),
 ########### Handle turns better to ensure robot is not stuck, Handle dead ends better and potentially log positions for more intuitive backtracking
