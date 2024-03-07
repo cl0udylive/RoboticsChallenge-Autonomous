@@ -106,17 +106,6 @@ wait(3, SECONDS)
 brain.screen.clear_screen()
 brain.screen.set_cursor(1, 1)
 
-# # Select Challenge Dialogue
-# brain.play_sound(SoundType.ALARM)
-# brain.screen.print("Select Challenge:")
-# brain.screen.next_row()
-# brain.screen.print("Left: Maze")
-# brain.screen.next_row()
-# brain.screen.print("Right: Auto.")
-
-# Select Challenge Logic
-
-
 # Maze Challenge Logic
 def handleError():
     brain.screen.print("Error!")
@@ -167,6 +156,7 @@ def randomTurn():
         drivetrain.turn_for(RIGHT, current_heading + 90, DEGREES, wait=True)
 
 def sideSensorCheck():
+
     distanceLeft = distance_left.object_distance(MM)
     distanceRight = distance_right.object_distance(MM)
 
@@ -188,6 +178,7 @@ def sideSensorCheck():
         handleObstacle("all")
 
 def mazeChallenge():
+
     while True:
         distanceFront = distance_front.object_distance(MM)
         
@@ -198,15 +189,23 @@ def mazeChallenge():
             handleObstacle("front")
             break
         
+        current_heading = brain_inertial.heading()
+        print(current_heading)
+        nearest_angle = round(current_heading / 90) * 90
+        print(nearest_angle)
+
+        if abs(current_heading - nearest_angle) > 5:
+            brain.screen.print("Adjusting Heading")
+            print("Adjusting Heading")
+            drivetrain.stop()
+            drivetrain.set_turn_velocity(65, PERCENT)
+            drivetrain.turn_to_heading(nearest_angle, DEGREES, wait=True)
+
         brain.screen.print("Driving...")
         print("Driving...")
         drivetrain.set_drive_velocity(100, PERCENT)
         drivetrain.drive(FORWARD)
-        
 
-# Challenge Selector does not work, fix in future
 mazeChallenge()
 
-##### TODO: Create logic to ensure robot is moving completely straight (Check if distance is equal between left and right sensor and correct),
-########### Handle turns better to ensure robot is not stuck, Handle dead ends better and potentially log positions for more intuitive backtracking
-########### and maze exploration, handle intersections better (No objects anywhere, or no objects to the sides), clean code up
+##### TODO: potentially log positions for more intuitive backtracking and maze exploration
