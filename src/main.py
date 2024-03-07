@@ -72,6 +72,7 @@ brain.screen.print("5 Seconds")
 brain_inertial.calibrate()
 brain_inertial.set_heading(0.0, DEGREES)
 brain_inertial.set_rotation(0.0, DEGREES)
+current_heading = brain_inertial.heading()
 wait(5, SECONDS)
 
 brain.screen.clear_screen()
@@ -123,8 +124,6 @@ def handleError():
 
 def handleObstacle(obstacleDirection):
 
-    current_heading = brain_inertial.heading()
-
     if obstacleDirection == "front":
         brain.screen.print("Object Front!")
         print("Object Front!")
@@ -154,8 +153,6 @@ def handleObstacle(obstacleDirection):
         randomTurn()
 
 def randomTurn():
-
-    current_heading = brain_inertial.heading()
 
     if random.choice([True, False]):
         brain.screen.print("Turning Left!")
@@ -201,14 +198,10 @@ def mazeChallenge():
             handleObstacle("front")
             break
        
-        current_heading = brain_inertial.heading()
-        print(current_heading)
         nearest_heading = round(current_heading / 90) * 90
-        print(nearest_heading)
 
         if nearest_heading != current_heading:
-            drivetrain.stop()
-            drivetrain.turn_to_heading(nearest_heading, DEGREES, wait=True)    
+            drivetrain.turn_to_heading(nearest_heading, DEGREES, wait=False)    
 
         brain.screen.print("Driving...")
         print("Driving...")
