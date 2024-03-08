@@ -54,6 +54,7 @@ def calibrate_drivetrain():
 # 	Description:  Source code for a Self Driving Robot. 
 #                 Created for New Visions Engineering 
 #                 Robotics Challenge.
+#   Updated:      3/7/24
 # 
 # ------------------------------------------
 
@@ -72,7 +73,7 @@ brain.screen.print("5 Seconds")
 brain_inertial.calibrate()
 brain_inertial.set_heading(0.0, DEGREES)
 brain_inertial.set_rotation(0.0, DEGREES)
-current_heading = brain_inertial.heading()
+currentHeading = brain_inertial.heading()
 wait(5, SECONDS)
 
 brain.screen.clear_screen()
@@ -107,9 +108,11 @@ brain.screen.clear_screen()
 brain.screen.set_cursor(1, 1)
 
 # Maze Challenge Logic
-def handleError():
-    brain.screen.print("Error!")
-    print("Error")
+def handleSingleObstacle(isObstacleLeft):
+    if isObstacleLeft:
+        handleObstacle("left")
+    else:
+        handleObstacle("right")
 
 def handleObstacle(obstacleDirection):
 
@@ -123,13 +126,13 @@ def handleObstacle(obstacleDirection):
         brain.screen.print("Turning Right!")
         print("Turning Right!")
         drivetrain.set_turn_velocity(65, PERCENT)            
-        drivetrain.turn_for(RIGHT, current_heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(RIGHT, currentHeading + 90, DEGREES, wait=True)
 
     elif obstacleDirection == "right":
         brain.screen.print("Turning Left!")
         print("Turning Left!")
         drivetrain.set_turn_velocity(65, PERCENT)
-        drivetrain.turn_for(LEFT, current_heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(LEFT, currentHeading + 90, DEGREES, wait=True)
 
     elif obstacleDirection == "both":
         print("Intersection!")
@@ -147,13 +150,16 @@ def randomTurn():
         brain.screen.print("Turning Left!")
         print("Turning Left!")
         drivetrain.set_turn_velocity(65, PERCENT)
-        drivetrain.turn_for(LEFT, current_heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(LEFT, currentHeading + 90, DEGREES, wait=True)
 
     else:
         brain.screen.print("Turning Right!")
         print("Turning Right!")
         drivetrain.set_turn_velocity(65, PERCENT)
-        drivetrain.turn_for(RIGHT, current_heading + 90, DEGREES, wait=True)
+        drivetrain.turn_for(RIGHT, currentHeading + 90, DEGREES, wait=True)
+
+DISTANCE_THRESHOLD = 100 # millimeters
+DRIFT_THRESHOLD = 5 # degrees
 
 def sideSensorCheck():
 
@@ -163,48 +169,48 @@ def sideSensorCheck():
     brain.screen.clear_screen()
     brain.screen.set_cursor(1, 1)
 
-    if distanceLeft < 100 and distanceRight < 100:
+    if distanceLeft < DISTANCE_THRESHOLD and distanceRight < DISTANCE_THRESHOLD:
         handleObstacle("both")
     
-    elif distanceLeft < 100 or distanceRight < 100:
-        
-        if distanceLeft < 100:
-            handleObstacle("left")
-
-        else:
-            handleObstacle("right")
+    elif distanceLeft < DISTANCE_THRESHOLD or distanceRight < DISTANCE_THRESHOLD:
+        handleSingleObstacle(distanceLeft < DISTANCE_THRESHOLD)
         
     else:
         handleObstacle("all")
 
 def mazeChallenge():
-
-    while True:
-        distanceFront = distance_front.object_distance(MM)
+    try:
+        while True:
+            distanceFront = distance_front.object_distance(MM)
         
-        brain.screen.clear_screen()
-        brain.screen.set_cursor(1, 1)
+            brain.screen.clear_screen()
+            brain.screen.set_cursor(1, 1)
 
-        while distanceFront < 100:
-            handleObstacle("front")
-            break
+            while distanceFront < DISTANCE_THRESHOLD:
+                handleObstacle("front")
+                break
         
-        current_heading = brain_inertial.heading()
-        print(current_heading)
-        nearest_angle = round(current_heading / 90) * 90
-        print(nearest_angle)
+            currentHeading = brain_inertial.heading()
+            nearestHeading = round(currentHeading / 90) * 90
 
-        if abs(current_heading - nearest_angle) > 5:
-            brain.screen.print("Adjusting Heading")
-            print("Adjusting Heading")
-            drivetrain.stop()
-            drivetrain.set_turn_velocity(65, PERCENT)
-            drivetrain.turn_to_heading(nearest_angle, DEGREES, wait=True)
+            if abs(currentHeading - nearestHeading) > DRIFT_THRESHOLD:
+                brain.screen.print("Adjusting Heading")
+                print("Adjusting Heading")
+                drivetrain.stop()
+                drivetrain.set_turn_velocity(65, PERCENT)
+                drivetrain.turn_to_heading(nearestHeading, DEGREES, wait=True)
 
-        brain.screen.print("Driving...")
-        print("Driving...")
-        drivetrain.set_drive_velocity(100, PERCENT)
-        drivetrain.drive(FORWARD)
+            brain.screen.print("Driving...")
+            print("Driving...")
+            drivetrain.set_drive_velocity(100, PERCENT)
+            drivetrain.drive(FORWARD)
+
+    except Exception as e:
+        brain.screen.print("Error!")
+        brain.screen.next_row()
+        brain.screen.print(e)
+        print("Error! ", e)
+        
 
 mazeChallenge()
 
