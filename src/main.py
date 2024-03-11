@@ -7,14 +7,6 @@ brain=Brain()
 
 # Robot configuration code
 brain_inertial = Inertial()
-left_drive_smart = Motor(Ports.PORT8, 1.0, False)
-right_drive_smart = Motor(Ports.PORT11, 1.0, True)
-
-drivetrain = SmartDrive(left_drive_smart, right_drive_smart, brain_inertial, 200)
-controller = Controller()
-distance_left = Distance(Ports.PORT1)
-distance_right = Distance(Ports.PORT6)
-distance_front = Distance(Ports.PORT3)
 
 
 
@@ -28,21 +20,6 @@ def setRandomSeedUsingAccel():
     
 # Set random seed 
 setRandomSeedUsingAccel()
-
-vexcode_initial_drivetrain_calibration_completed = False
-def calibrate_drivetrain():
-    # Calibrate the Drivetrain Inertial
-    global vexcode_initial_drivetrain_calibration_completed
-    sleep(200, MSEC)
-    brain.screen.print("Calibrating")
-    brain.screen.next_row()
-    brain.screen.print("Inertial")
-    brain_inertial.calibrate()
-    while brain_inertial.is_calibrating():
-        sleep(25, MSEC)
-    vexcode_initial_drivetrain_calibration_completed = True
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
 
 #endregion VEXcode Generated Robot Configuration
 
@@ -161,23 +138,6 @@ def randomTurn():
 DISTANCE_THRESHOLD = 100 # millimeters
 DRIFT_THRESHOLD = 5 # degrees
 
-def sideSensorCheck():
-
-    distanceLeft = distance_left.object_distance(MM)
-    distanceRight = distance_right.object_distance(MM)
-
-    brain.screen.clear_screen()
-    brain.screen.set_cursor(1, 1)
-
-    if distanceLeft < DISTANCE_THRESHOLD and distanceRight < DISTANCE_THRESHOLD:
-        handleObstacle("both")
-    
-    elif distanceLeft < DISTANCE_THRESHOLD or distanceRight < DISTANCE_THRESHOLD:
-        handleSingleObstacle(distanceLeft < DISTANCE_THRESHOLD)
-        
-    else:
-        handleObstacle("all")
-
 def mazeChallenge():
     try:
         while True:
@@ -214,4 +174,96 @@ def mazeChallenge():
 
 mazeChallenge()
 
-##### TODO: potentially log positions for more intuitive backtracking and maze exploration
+##### Everything below this was made or edited by Thomas
+
+def intersection():   # recursive function called everytime the robot comes across a intersection or dead end 
+    openings = findOpenings() 
+    wayBackHeading = brain_inertial.heading() - 180;  #heading is stored incase intersection is no good, is passed to goBack function Many need to be normalized to ensure it always falls between 0-360
+    openingHeading = wayBackHeading   #robot starts at the opening it came through and updates this var everytime it goes through a new opening 
+
+    if mazecomplete():
+            return True;
+
+    if openings == 0:    #Logic is for dead ends, need to rename entire function to better describe it 
+        goBack(wayBackHeading)
+        return False # goes back to last intersection and then takes one step out of recursive call 
+            
+    for i in range(openings): #it will try every opening at an intersection
+        while objectFront():    
+            drivetrain.set_turn_velocity(65, PERCENT)
+            drivetrain.turn_to_heading(openingHeading +5, DEGREES, wait=True)       #Logic: spin to current angle - 180 and spin clockwise until first opening is found
+        openingHeading = brain_inertial.heading()
+        if driveForward():  #returns true when at a dead end or intersection which calls intersection
+            intersection() 
+        if i == (openings -1): #If all paths in a intersection are bad go back and take one step out of recursive call 
+            goBack(wayBackHeading)
+            return False
+    
+
+
+def findOpenings():    #Basically does a circle and counts the amount of openings at a intersection, code is probably redundant but it works, hopefully 
+    startHeading = brain.inertial.heading()
+    x = False                  
+    y = False
+    count = 0;
+    while brain.inertial.heading() != startHeading:
+        y = x
+        drivetrain.set_turn_velocity(65, PERCENT)
+        drivetrain.turn_to_heading(openingHeading +5, DEGREES, wait=True)
+        if objectFront() != True:
+            x = False
+        else 
+            x = True
+
+        if x != y:
+            count += 1
+    return(count)
+
+
+def goBack(wayBackHeading):
+    drivetrain.set_turn_velocity(65, PERCENT)
+    drivetrain.turn_to_heading(wayBackHeading, DEGREES, wait=True) #turns around to go back
+    driveForward();
+    
+
+def driveForward(): #probably needs some sort of lane centering algorithm
+    while checkIntersection() != True:  #Function will return true when it comes across an intersection
+        drivetrain.set_drive_velocity(100, PERCENT)
+        drivetrain.drive(FORWARD)       #how do I control amount driven forward
+
+    
+def checkIntersection():
+    if sideSensorCheck():
+        return True
+    if objectFront():
+        return True
+
+
+def sideSensorCheck():   #Made by Eli but changed return values to work for me 
+    DISTANCE_THRESHOLD = 100 # millimeters
+
+    distanceLeft = distance_left.object_distance(MM)
+    distanceRight = distance_right.object_distance(MM)
+
+    brain.screen.clear_screen()
+    brain.screen.set_cursor(1, 1)
+
+    if distanceLeft > DISTANCE_THRESHOLD and distanceRight > DISTANCE_THRESHOLD:
+        return True
+    
+    elif distanceLeft > DISTANCE_THRESHOLD or distanceRight > DISTANCE_THRESHOLD:
+        return True
+        
+    else:
+        return False
+
+
+def objectFront():  #returns true if object is infront 
+    distanceFront = distance_front.object_distance(MM)
+    if distanceFront < DISTANCE_THRESHOLD:
+        return True
+
+            
+
+
+
