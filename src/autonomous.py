@@ -7,13 +7,13 @@ brain=Brain()
 
 # Robot configuration code
 brain_inertial = Inertial()
-touchled_nextTask = Touchled(Ports.PORT8)
-motor_arm = Motor(Ports.PORT10, True)
-motor_claw = Motor(Ports.PORT11, False)
 left_drive_smart = Motor(Ports.PORT7, 3.0, True)
 right_drive_smart = Motor(Ports.PORT12, 3.0, False)
 
 drivetrain = SmartDrive(left_drive_smart, right_drive_smart, brain_inertial, 200)
+motor_claw = Motor(Ports.PORT11, False)
+motor_arm = Motor(Ports.PORT10, True)
+touchled_nextTask = Touchled(Ports.PORT8)
 
 
 
@@ -60,35 +60,39 @@ def calibrate_drivetrain():
 from vex import *
 
 # Begin project code
-# Calibrate Robot CPU
-brain.screen.set_font(FontType.MONO15)
-brain.screen.print("Calibrating")
-brain.screen.next_row()
-brain.screen.print("Remain Still")
-brain.screen.next_row()
-brain.screen.print("Approx. Time:")
-brain.screen.next_row()
-brain.screen.print("5 Seconds")
-brain_inertial.calibrate()
-brain_inertial.set_heading(0.0, DEGREES)
-brain_inertial.set_rotation(0.0, DEGREES)
-touchled_nextTask.set_brightness(100)
-currentHeading = brain_inertial.heading()
-wait(5, SECONDS)
+def calibrate():
+    brain.screen.set_font(FontType.MONO15)
+    brain.screen.print("Calibrating")
+    brain.screen.next_row()
+    brain.screen.print("Remain Still")
+    brain.screen.next_row()
+    brain.screen.print("Approx. Time:")
+    brain.screen.next_row()
+    brain.screen.print("5 Seconds")
+    brain_inertial.calibrate()
+    brain_inertial.set_heading(0.0, DEGREES)
+    brain_inertial.set_rotation(0.0, DEGREES)
+    touchled_nextTask.set_brightness(100)
+    currentHeading = brain_inertial.heading()
 
-brain.screen.clear_screen()
-brain.screen.set_cursor(1, 1)
-brain.play_sound(SoundType.TADA)
-brain.screen.print("Complete!")
-wait(2, SECONDS)
+    drivetrain.set_stopping(BRAKE)
+    drivetrain.set_heading(0.0, DEGREES)
+    drivetrain.set_rotation(0.0, DEGREES)
 
-brain.screen.clear_screen()
-brain.screen.set_cursor(1, 1)
+    wait(5, SECONDS)
+    
+    brain.screen.clear_screen()
+    brain.screen.set_cursor(1, 1)
+    brain.play_sound(SoundType.TADA)
+    brain.screen.print("Complete!")
+    wait(2, SECONDS)
 
-# Initialize and Calibrate Robot Sensors and Devices
-drivetrain.set_stopping(BRAKE)
-drivetrain.set_heading(0.0, DEGREES)
-drivetrain.set_rotation(0.0, DEGREES)
+    brain.screen.clear_screen()
+    brain.screen.set_cursor(1, 1)   
+
+    return
+
+calibrate()
 
 brain.play_note(4, 5, 500)
 brain.screen.print("Devices:")
@@ -122,8 +126,9 @@ def adjustHeading(goalHeading):
         brain.screen.print("Adjusting Heading")
         print("Adjusting Heading")
         drivetrain.stop()
-        drivetrain.set_turn_velocity(30, PERCENT)
+        drivetrain.set_turn_velocity(15, PERCENT)
         drivetrain.turn_to_heading(goalHeading, DEGREES, wait=True)
+        brain.screen.clear_screen()
 
 def sodaCanGrabTask():
     touchled_nextTask.set_color(Color.GREEN)
@@ -134,26 +139,28 @@ def sodaCanGrabTask():
     wait(1, SECONDS)
     moveArm(200)
     wait(1, SECONDS)
-    drivetrain.drive_for(FORWARD, 20, INCHES, wait=True)
+    drivetrain.drive_for(FORWARD, 22, INCHES, wait=True)
     moveArm(45)
     wait(1, SECONDS)
     openClaw()
-    drivetrain.drive_for(REVERSE, 20, INCHES, wait=True)
+    drivetrain.drive_for(REVERSE, 22, INCHES, wait=True)
     return
  
 def blockGrabTask():
-    moveArm(0)
+    calibrate()
+    moveArm(150)
     touchled_nextTask.set_color(Color.GREEN)
     openClaw()
     wait(1, SECONDS)
-    drivetrain.drive_for(FORWARD, 18, INCHES, wait=True)
+    drivetrain.drive_for(FORWARD, 12, INCHES, wait=True)
+    adjustHeading(0)
+    moveArm(0)
+    drivetrain.drive_for(FORWARD, 6, INCHES, wait=True)
     closeClaw()
     wait(1, SECONDS)
     moveArm(100)
     wait(1, SECONDS)
-    #drivetrain.set_drive_velocity(20, PERCENT)  #Trying slowing down
     drivetrain.drive_for(FORWARD, 7, INCHES, wait=True)
-    #drivetrain.set_drive_velocity(30, PERCENT)
     moveArm(25)
     wait(.3, SECONDS)
     openClaw()
@@ -164,16 +171,15 @@ def blockGrabTask():
     return
 
 def hookTask():
-    # TODO: Logic for Hook Task
     print("Hook Task")
     closeClaw()
-    #wait(1, SECONDS)
-    drivetrain.set_turn_velocity(15, PERCENT)#was 40
+    wait(1, SECONDS)
+    drivetrain.set_turn_velocity(15, PERCENT)
     drivetrain.turn_for(RIGHT, 50, DEGREES, wait=True)
     adjustHeading(50)
     print("Turn")
-    drivetrain.set_turn_velocity(30, PERCENT)#was 40
-    drivetrain.drive_for(FORWARD, 12, INCHES, wait=True)
+    drivetrain.set_turn_velocity(30, PERCENT)
+    drivetrain.drive_for(FORWARD, 15, INCHES, wait=True)
     print("drive")
     drivetrain.turn_for(RIGHT, 35, DEGREES, wait=True)
     adjustHeading(90)
@@ -181,21 +187,26 @@ def hookTask():
     wait(1, SECONDS)
     openClaw()
     wait(1, SECONDS)
-    drivetrain.drive_for(FORWARD, 15, INCHES, wait=True)
+    drivetrain.drive_for(FORWARD, 10, INCHES, wait=True)
     closeClaw()
     wait(1, SECONDS)
     moveArm(100)
     wait(1, SECONDS)
+    drivetrain.turn_for(RIGHT, 90, DEGREES, wait=True)
+    adjustHeading(180)
+    drivetrain.turn_for(RIGHT, 35, DEGREES, wait=True)
+    adjustHeading(305)
     return
 
 def autonomousChallenge():
     drivetrain.set_drive_velocity(15, PERCENT)
     
     try:
-        #sodaCanGrabTask()
         touchled_nextTask.set_color(Color.WHITE)
         touchled_nextTask.set_fade(FadeType.FAST)
-        drivetrain.set_turn_velocity(50, PERCENT)
+        sodaCanGrabTask()
+        touchled_nextTask.set_color(Color.WHITE)
+        touchled_nextTask.set_fade(FadeType.FAST)
         touchled_nextTask.pressed(blockGrabTask)
         brain.play_sound(SoundType.TADA)
 
